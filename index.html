@@ -3,58 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>בדיקת נתונים - חדר כושר למוח</title>
+    <title>נבחרת הקריאה - חדר כושר למוח</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
-        #data-preview { 
-            background: #f0f0f0; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: left; 
-            direction: ltr; 
-            font-family: monospace;
-            white-space: pre-wrap; 
-            margin-top: 20px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
 
-    <h1>בדיקת תקשורת: גוגל שיטס -> גיטהאב</h1>
-    <p id="status">מנסה להתחבר לנתונים...</p>
+    <header class="bg-indigo-600 text-white p-6 shadow-lg text-center">
+        <h1 class="text-3xl font-bold">🧠 חדר כושר למוח - כיתה ה'</h1>
+        <p class="mt-2 text-indigo-100">מתאמנים, מתחזקים ונהנים מקריאה!</p>
+    </header>
 
-    <div id="data-preview">ממתין לנתונים...</div>
+    <div class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card p-6 text-center border-b-4 border-green-500">
+                <h2 class="text-gray-500 font-semibold mb-2">סה"כ דקות כיתתיות</h2>
+                <div id="total-minutes" class="text-5xl font-bold text-green-600">טוען...</div>
+                <p class="text-sm text-gray-400 mt-2">היעד שלנו: 1000 דקות!</p>
+            </div>
+
+            <div class="card p-6 text-center border-b-4 border-blue-500">
+                <h2 class="text-gray-500 font-semibold mb-2">מספר אימונים שהושלמו</h2>
+                <div id="total-workouts" class="text-5xl font-bold text-blue-600">טוען...</div>
+                <p class="text-sm text-gray-400 mt-2">כל אימון נחשב!</p>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">📊 התקדמות יומית</h2>
+            <canvas id="readingChart" height="100"></canvas>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">🏆 דיווחים אחרונים מהשטח</h2>
+            <ul id="recent-list" class="divide-y divide-gray-100">
+                <li class="py-2 text-gray-500">טוען נתונים...</li>
+            </ul>
+        </div>
+
+    </div>
 
     <script>
-        // הקישור שלך לקובץ ה-CSV
+        // הקישור שלך (אותו אחד שעבד לנו מקודם)
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7Ef224-e8pl9hy_11eOY3QGy3JX4plIeurKRjQscqRhlXrYR9Aera79dcgbYqx6so_SZ_asei0S7h/pub?gid=379096617&single=true&output=csv';
 
-        // שימוש בספרייה PapaParse כדי למשוך ולפענח את המידע
         Papa.parse(sheetUrl, {
             download: true,
-            header: true, // זה אומר לשורה הראשונה לשמש ככותרות (שמות העמודות)
+            header: true,
             complete: function(results) {
-                // הצלחה!
-                console.log("המידע המלא שהתקבל:", results.data);
-                
-                const count = results.data.length;
-                document.getElementById('status').innerHTML = `המשימה הושלמה! ✅ <br> הצלחנו לקרוא ${count} שורות מהטופס.`;
-                document.getElementById('status').className = 'success';
-
-                // מציג על המסך רק את 2 השורות הראשונות כדי שנראה שזה עובד
-                document.getElementById('data-preview').innerText = JSON.stringify(results.data.slice(0, 2), null, 2);
-            },
-            error: function(err) {
-                // כישלון :(
-                console.error("שגיאה:", err);
-                document.getElementById('status').innerText = 'שגיאה בטעינת הנתונים ❌. בדקי את הקונסול (F12) לפרטים.';
-                document.getElementById('status').className = 'error';
+                processData(results.data);
             }
         });
-    </script>
 
+        function processData(data) {
+            let totalMinutes = 0;
+            let totalWorkouts = 0;
+            let dailyMinutes = {};
+            
+            // ניקוי ועיבוד הנתונים
+            const cleanData = data.filter(row => row['שם תלמיד/ה'] && row['דקות']); // סינון שורות ריקות
+
+            cleanData.forEach(row => {
+                // חישוב דקות
+                const mins = parseInt(row['דקות']) || 0;
+                totalMinutes += mins;
+                totalWorkouts++;
+
+                // הכנה לגרף (קיבוץ לפי תאריך)
+                const date = row['תאריך'];
+                if (dailyMinutes[date]) {
+                    dailyMinutes[date] += mins;
+                } else {
+                    dailyMinutes[date] = mins;
+                }
+            });
+
+            // עדכון המספרים במסך
+            document.getElementById('total-minutes').innerText = totalMinutes.toLocaleString();
+            document.getElementById('total-workouts').innerText = totalWorkouts.toLocaleString();
+
+            // עדכון רשימת האחרונים (לוקח את ה-5 האחרונים ברשימה)
+            const recentList = document.getElementById('recent-list');
+            recentList.innerHTML = '';
+            // הופכים את הרשימה כדי לראות את החדשים ביותר למעלה, ולוקחים 5
+            cleanData.slice().reverse().slice(0, 5).forEach(row => {
+                const li = document.createElement('li');
+                li.className = "py-3 flex justify-between items-center";
+                li.innerHTML = `
+                    <div>
+                        <span class="font-bold text-gray-800">${row['שם תלמיד/ה']}</span>
+                        <span class="text-gray-500 text-sm">קרא/ה "${row['מה קרא/ה']}"</span>
+                    </div>
+                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded">${row['דקות']} דק'</span>
+                `;
+                recentList.appendChild(li);
+            });
+
+            // בניית הגרף
+            renderChart(dailyMinutes);
+        }
+
+        function renderChart(dailyData) {
+            const ctx = document.getElementById('readingChart').getContext('2d');
+            
+            // המרה למערכים בשביל הגרף
+            const labels = Object.keys(dailyData); 
+            const dataPoints = Object.values(dailyData);
+
+            new Chart(ctx, {
+                type: 'bar', // סוג הגרף: עמודות
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'דקות קריאה יומיות',
+                        data: dataPoints,
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
