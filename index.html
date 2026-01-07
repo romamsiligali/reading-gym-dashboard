@@ -11,132 +11,259 @@
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: left 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-left: 2.5rem; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-50 text-gray-800">
 
-    <header class="bg-indigo-600 text-white p-6 shadow-lg text-center">
-        <h1 class="text-3xl font-bold">🧠 חדר כושר למוח - כיתה ה'</h1>
-        <p class="mt-2 text-indigo-100">מתאמנים, מתחזקים ונהנים מקריאה!</p>
+    <header class="bg-indigo-600 text-white p-6 shadow-lg">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div class="text-center md:text-right mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold">🧠 חדר כושר למוח - כיתה ה'</h1>
+                <p class="mt-2 text-indigo-100 opacity-90">מתאמנים, מתחזקים ונהנים מקריאה!</p>
+            </div>
+            
+            <div class="w-full md:w-1/3">
+                <label for="student-select" class="block text-sm font-medium text-indigo-100 mb-1">הצג נתונים עבור:</label>
+                <select id="student-select" class="block w-full bg-white text-gray-900 border border-gray-300 rounded-lg py-3 px-4 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm font-semibold">
+                    <option value="all">כל הכיתה (סיכום כללי)</option>
+                    </select>
+            </div>
+        </div>
     </header>
 
-    <div class="max-w-4xl mx-auto p-4 space-y-6">
+    <div class="max-w-6xl mx-auto p-4 space-y-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="card p-6 text-center border-b-4 border-green-500">
-                <h2 class="text-gray-500 font-semibold mb-2">סה"כ דקות כיתתיות</h2>
-                <div id="total-minutes" class="text-5xl font-bold text-green-600">טוען...</div>
-                <p class="text-sm text-gray-400 mt-2">היעד שלנו: 1000 דקות!</p>
+                <h2 class="text-gray-500 font-semibold mb-2">סה"כ דקות קריאה</h2>
+                <div id="total-minutes" class="text-5xl font-bold text-green-600">...</div>
+                <p id="minutes-subtitle" class="text-sm text-gray-400 mt-2">היעד שלנו: 1000 דקות!</p>
             </div>
 
             <div class="card p-6 text-center border-b-4 border-blue-500">
-                <h2 class="text-gray-500 font-semibold mb-2">מספר אימונים שהושלמו</h2>
-                <div id="total-workouts" class="text-5xl font-bold text-blue-600">טוען...</div>
-                <p class="text-sm text-gray-400 mt-2">כל אימון נחשב!</p>
+                <h2 class="text-gray-500 font-semibold mb-2">מספר אימונים</h2>
+                <div id="total-workouts" class="text-5xl font-bold text-blue-600">...</div>
+                <p class="text-sm text-gray-400 mt-2">דיווחים שהוזנו</p>
+            </div>
+
+            <div class="card p-6 text-center border-b-4 border-purple-500">
+                <h2 class="text-gray-500 font-semibold mb-2">תלמידים פעילים</h2>
+                <div id="active-students" class="text-5xl font-bold text-purple-600">...</div>
+                <p class="text-sm text-gray-400 mt-2">משתתפים באתגר</p>
             </div>
         </div>
 
-        <div class="card p-6">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">📊 התקדמות יומית</h2>
-            <canvas id="readingChart" height="100"></canvas>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-700 flex items-center">
+                    📊 התקדמות לאורך זמן
+                </h2>
+                <div class="h-64">
+                    <canvas id="readingChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-700 flex items-center">
+                    🥰 חווית הקריאה (רגשות)
+                </h2>
+                <div class="h-64 flex justify-center">
+                    <canvas id="moodChart"></canvas>
+                </div>
+            </div>
         </div>
 
-        <div class="card p-6">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">🏆 דיווחים אחרונים מהשטח</h2>
-            <ul id="recent-list" class="divide-y divide-gray-100">
-                <li class="py-2 text-gray-500">טוען נתונים...</li>
-            </ul>
+        <div class="card p-6 overflow-hidden">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">📜 יומן קריאה מפורט</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-right">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold text-gray-600">תאריך</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">שם התלמיד/ה</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">שם הספר</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">חוויה</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">דקות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body" class="divide-y divide-gray-100">
+                        </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
 
     <script>
-        // הקישור שלך (אותו אחד שעבד לנו מקודם)
+        // משתנים גלובליים לשמירת הנתונים והגרפים
+        let allData = []; 
+        let barChart = null;
+        let pieChart = null;
+
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7Ef224-e8pl9hy_11eOY3QGy3JX4plIeurKRjQscqRhlXrYR9Aera79dcgbYqx6so_SZ_asei0S7h/pub?gid=379096617&single=true&output=csv';
 
         Papa.parse(sheetUrl, {
             download: true,
             header: true,
             complete: function(results) {
-                processData(results.data);
+                // שמירת רק שורות תקינות (שיש להן שם ודקות)
+                allData = results.data.filter(row => row['שם תלמיד/ה'] && row['דקות']);
+                initDashboard();
             }
         });
 
-        function processData(data) {
-            let totalMinutes = 0;
-            let totalWorkouts = 0;
-            let dailyMinutes = {};
-            
-            // ניקוי ועיבוד הנתונים
-            const cleanData = data.filter(row => row['שם תלמיד/ה'] && row['דקות']); // סינון שורות ריקות
+        function initDashboard() {
+            populateStudentDropdown();
+            updateDashboard('all'); // טעינה ראשונית של כל הכיתה
 
-            cleanData.forEach(row => {
-                // חישוב דקות
-                const mins = parseInt(row['דקות']) || 0;
-                totalMinutes += mins;
-                totalWorkouts++;
-
-                // הכנה לגרף (קיבוץ לפי תאריך)
-                const date = row['תאריך'];
-                if (dailyMinutes[date]) {
-                    dailyMinutes[date] += mins;
-                } else {
-                    dailyMinutes[date] = mins;
-                }
+            // האזנה לשינוי בבחירת תלמיד
+            document.getElementById('student-select').addEventListener('change', (e) => {
+                updateDashboard(e.target.value);
             });
-
-            // עדכון המספרים במסך
-            document.getElementById('total-minutes').innerText = totalMinutes.toLocaleString();
-            document.getElementById('total-workouts').innerText = totalWorkouts.toLocaleString();
-
-            // עדכון רשימת האחרונים (לוקח את ה-5 האחרונים ברשימה)
-            const recentList = document.getElementById('recent-list');
-            recentList.innerHTML = '';
-            // הופכים את הרשימה כדי לראות את החדשים ביותר למעלה, ולוקחים 5
-            cleanData.slice().reverse().slice(0, 5).forEach(row => {
-                const li = document.createElement('li');
-                li.className = "py-3 flex justify-between items-center";
-                li.innerHTML = `
-                    <div>
-                        <span class="font-bold text-gray-800">${row['שם תלמיד/ה']}</span>
-                        <span class="text-gray-500 text-sm">קרא/ה "${row['מה קרא/ה']}"</span>
-                    </div>
-                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded">${row['דקות']} דק'</span>
-                `;
-                recentList.appendChild(li);
-            });
-
-            // בניית הגרף
-            renderChart(dailyMinutes);
         }
 
-        function renderChart(dailyData) {
+        // מילוי רשימת התלמידים (אוטומטי)
+        function populateStudentDropdown() {
+            const students = [...new Set(allData.map(d => d['שם תלמיד/ה'].trim()))].sort();
+            const select = document.getElementById('student-select');
+            
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student;
+                option.textContent = student;
+                select.appendChild(option);
+            });
+        }
+
+        // הפונקציה המרכזית שמעדכנת את כל המסך
+        function updateDashboard(selectedStudent) {
+            
+            // 1. סינון הנתונים לפי הבחירה
+            let filteredData = allData;
+            if (selectedStudent !== 'all') {
+                filteredData = allData.filter(d => d['שם תלמיד/ה'].trim() === selectedStudent);
+            }
+
+            // 2. חישוב סטטיסטיקות
+            let totalMinutes = 0;
+            let totalWorkouts = filteredData.length;
+            let dailyData = {};
+            let moodData = {};
+
+            // משתנה לספירת תלמידים ייחודיים (אם נבחר "כל הכיתה")
+            let uniqueStudents = new Set(filteredData.map(d => d['שם תלמיד/ה'])).size;
+
+            filteredData.forEach(row => {
+                const mins = parseInt(row['דקות']) || 0;
+                totalMinutes += mins;
+
+                // הכנה לגרף יומי
+                const date = row['תאריך']; // הנחה שזה הפורמט בגיליון
+                dailyData[date] = (dailyData[date] || 0) + mins;
+
+                // הכנה לגרף רגשות
+                // נשתמש בעמודה "איך הרגיש/ה" (flow)
+                let mood = row['איך הרגיש/ה'] || row['flow'] || 'לא צוין';
+                moodData[mood] = (moodData[mood] || 0) + 1;
+            });
+
+            // 3. עדכון כרטיסי המידע
+            document.getElementById('total-minutes').innerText = totalMinutes.toLocaleString();
+            document.getElementById('total-workouts').innerText = totalWorkouts.toLocaleString();
+            
+            // עדכון הכרטיס השלישי: אם זה תלמיד בודד, נראה את ממוצע הדקות שלו, אם זו כיתה - מספר תלמידים
+            if (selectedStudent === 'all') {
+                 document.getElementById('active-students').innerText = uniqueStudents;
+                 document.getElementById('active-students').parentElement.querySelector('h2').innerText = "תלמידים פעילים";
+            } else {
+                 let avg = totalWorkouts > 0 ? Math.round(totalMinutes / totalWorkouts) : 0;
+                 document.getElementById('active-students').innerText = avg;
+                 document.getElementById('active-students').parentElement.querySelector('h2').innerText = "ממוצע לאימון (דק')";
+            }
+
+            // 4. עדכון גרפים
+            renderBarChart(dailyData);
+            renderPieChart(moodData);
+
+            // 5. עדכון טבלה
+            renderTable(filteredData);
+        }
+
+        function renderBarChart(dailyData) {
             const ctx = document.getElementById('readingChart').getContext('2d');
             
-            // המרה למערכים בשביל הגרף
-            const labels = Object.keys(dailyData); 
-            const dataPoints = Object.values(dailyData);
+            // אם כבר יש גרף, צריך להרוס אותו לפני שיוצרים חדש
+            if (barChart) barChart.destroy();
 
-            new Chart(ctx, {
-                type: 'bar', // סוג הגרף: עמודות
+            barChart = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: Object.keys(dailyData),
                     datasets: [{
-                        label: 'דקות קריאה יומיות',
-                        data: dataPoints,
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 1,
-                        borderRadius: 5
+                        label: 'דקות קריאה',
+                        data: Object.values(dailyData),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
-                    scales: {
-                        y: { beginAtZero: true }
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function renderPieChart(moodData) {
+            const ctx = document.getElementById('moodChart').getContext('2d');
+            
+            if (pieChart) pieChart.destroy();
+
+            // צבעים יפים לגרף פאי
+            const colors = ['#34d399', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa', '#9ca3af'];
+
+            pieChart = new Chart(ctx, {
+                type: 'doughnut', // סגנון "דונאט" מודרני יותר
+                data: {
+                    labels: Object.keys(moodData),
+                    datasets: [{
+                        data: Object.values(moodData),
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'right' } // מקרא בצד
                     }
                 }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = '';
+
+            // מציג את הנתונים החדשים ביותר למעלה
+            const sortedData = data.slice().reverse();
+
+            sortedData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 border-b text-gray-500 text-sm">${row['תאריך']}</td>
+                    <td class="py-3 px-4 border-b font-medium text-gray-800">${row['שם תלמיד/ה']}</td>
+                    <td class="py-3 px-4 border-b text-gray-600">${row['מה קרא/ה']}</td>
+                    <td class="py-3 px-4 border-b text-gray-500 text-sm"><span class="bg-blue-100 text-blue-800 py-1 px-2 rounded-full text-xs">${row['איך הרגיש/ה'] || row['flow'] || '-'}</span></td>
+                    <td class="py-3 px-4 border-b font-bold text-indigo-600">${row['דקות']}</td>
+                `;
+                tbody.appendChild(tr);
             });
         }
     </script>
