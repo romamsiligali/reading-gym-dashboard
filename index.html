@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקת נתונים - חדר כושר למוח</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        #data-preview { 
+            background: #f0f0f0; 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: left; 
+            direction: ltr; 
+            font-family: monospace;
+            white-space: pre-wrap; 
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>בדיקת תקשורת: גוגל שיטס -> גיטהאב</h1>
+    <p id="status">מנסה להתחבר לנתונים...</p>
+
+    <div id="data-preview">ממתין לנתונים...</div>
+
+    <script>
+        // הקישור שלך לקובץ ה-CSV
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7Ef224-e8pl9hy_11eOY3QGy3JX4plIeurKRjQscqRhlXrYR9Aera79dcgbYqx6so_SZ_asei0S7h/pub?gid=379096617&single=true&output=csv';
+
+        // שימוש בספרייה PapaParse כדי למשוך ולפענח את המידע
+        Papa.parse(sheetUrl, {
+            download: true,
+            header: true, // זה אומר לשורה הראשונה לשמש ככותרות (שמות העמודות)
+            complete: function(results) {
+                // הצלחה!
+                console.log("המידע המלא שהתקבל:", results.data);
+                
+                const count = results.data.length;
+                document.getElementById('status').innerHTML = `המשימה הושלמה! ✅ <br> הצלחנו לקרוא ${count} שורות מהטופס.`;
+                document.getElementById('status').className = 'success';
+
+                // מציג על המסך רק את 2 השורות הראשונות כדי שנראה שזה עובד
+                document.getElementById('data-preview').innerText = JSON.stringify(results.data.slice(0, 2), null, 2);
+            },
+            error: function(err) {
+                // כישלון :(
+                console.error("שגיאה:", err);
+                document.getElementById('status').innerText = 'שגיאה בטעינת הנתונים ❌. בדקי את הקונסול (F12) לפרטים.';
+                document.getElementById('status').className = 'error';
+            }
+        });
+    </script>
+
+</body>
+</html>
