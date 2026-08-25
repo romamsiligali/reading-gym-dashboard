@@ -116,7 +116,12 @@
             header: true,
             complete: function(results) {
                 // שמירת רק שורות תקינות (שיש להן שם ודקות)
-                allData = results.data.filter(row => row['שם תלמיד/ה'] && row['דקות']);
+                const excludedStudents = new Set(['נטע משה בן רבקה', 'שביט איזנברג']);
+                allData = results.data.filter(row =>
+                    row['שם תלמיד/ה'] &&
+                    row['דקות'] &&
+                    !excludedStudents.has(row['שם תלמיד/ה'].trim())
+                );
                 initDashboard();
             }
         });
@@ -133,7 +138,10 @@
 
         // מילוי רשימת התלמידים (אוטומטי)
         function populateStudentDropdown() {
-            const students = [...new Set(allData.map(d => d['שם תלמיד/ה'].trim()))].sort();
+            const students = [...new Set([
+                ...allData.map(d => d['שם תלמיד/ה'].trim()),
+                'מתן תורג׳מן'
+            ])].sort();
             const select = document.getElementById('student-select');
             
             students.forEach(student => {
