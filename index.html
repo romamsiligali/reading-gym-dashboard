@@ -31,18 +31,26 @@
                 <p class="mt-2 text-indigo-100 opacity-90">מתאמנים, מתחזקים ונהנים מקריאה!</p>
             </div>
             
-            <div class="w-full md:w-1/3">
-                <label for="student-select" class="block text-sm font-medium text-indigo-100 mb-1">הצג נתונים עבור:</label>
-                <select id="student-select" class="block w-full bg-white text-gray-900 border border-gray-300 rounded-lg py-3 px-4 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm font-semibold">
-                    <option value="all">כל הכיתה (סיכום כללי)</option>
+            <div class="w-full md:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="week-select" class="block text-sm font-medium text-indigo-100 mb-1">שבוע להצגה:</label>
+                    <select id="week-select" class="block w-full bg-white text-gray-900 border border-gray-300 rounded-lg py-3 px-4 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm font-semibold"></select>
+                </div>
+                <div>
+                    <label for="student-select" class="block text-sm font-medium text-indigo-100 mb-1">הצג נתונים עבור:</label>
+                    <select id="student-select" class="block w-full bg-white text-gray-900 border border-gray-300 rounded-lg py-3 px-4 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm font-semibold">
+                        <option value="all">כל הכיתה (סיכום כללי)</option>
                     </select>
+                </div>
             </div>
         </div>
     </header>
 
     <div class="max-w-6xl mx-auto p-4 space-y-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div id="weekly-period-label" class="text-center text-sm font-semibold text-indigo-700"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="card p-6 text-center border-b-4 border-green-500">
                 <h2 class="text-gray-500 font-semibold mb-2">סה"כ דקות קריאה</h2>
                 <div id="total-minutes" class="text-5xl font-bold text-green-600">...</div>
@@ -59,6 +67,12 @@
                 <h2 class="text-gray-500 font-semibold mb-2">תלמידים פעילים</h2>
                 <div id="active-students" class="text-5xl font-bold text-purple-600">...</div>
                 <p class="text-sm text-gray-400 mt-2">משתתפים באתגר</p>
+            </div>
+
+            <div class="card p-6 text-center border-b-4 border-amber-500">
+                <h2 class="text-gray-500 font-semibold mb-2">לעומת השבוע הקודם</h2>
+                <div id="weekly-change" class="text-4xl font-bold text-amber-600">...</div>
+                <p class="text-sm text-gray-400 mt-2">שינוי בדקות הקריאה</p>
             </div>
         </div>
 
@@ -79,6 +93,23 @@
                 <div class="h-64 flex justify-center">
                     <canvas id="moodChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <div class="card p-6 overflow-hidden">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">📅 תמונת מצב שבועית לפי תלמיד/ה</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-right">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold text-gray-600">שם התלמיד/ה</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">דקות השבוע</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">אימונים</th>
+                            <th class="py-3 px-4 font-semibold text-gray-600">לעומת שבוע קודם</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weekly-table-body" class="divide-y divide-gray-100"></tbody>
+                </table>
             </div>
         </div>
 
@@ -108,6 +139,7 @@
         let allData = []; 
         let barChart = null;
         let pieChart = null;
+        let selectedWeek = null;
 
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7Ef224-e8pl9hy_11eOY3QGy3JX4plIeurKRjQscqRhlXrYR9Aera79dcgbYqx6so_SZ_asei0S7h/pub?gid=1236469719&single=true&output=csv';
 
@@ -122,18 +154,70 @@
                     row['דקות'] &&
                     !excludedStudents.has(row['שם תלמיד/ה'].trim())
                 );
+                allData.forEach(row => row._date = parseReportDate(row['תאריך']));
+                allData = allData.filter(row => row._date);
                 initDashboard();
             }
         });
 
         function initDashboard() {
             populateStudentDropdown();
-            updateDashboard('all'); // טעינה ראשונית של כל הכיתה
+            populateWeekDropdown();
+            updateDashboard();
 
             // האזנה לשינוי בבחירת תלמיד
             document.getElementById('student-select').addEventListener('change', (e) => {
-                updateDashboard(e.target.value);
+                updateDashboard();
             });
+            document.getElementById('week-select').addEventListener('change', (e) => {
+                selectedWeek = e.target.value;
+                updateDashboard();
+            });
+        }
+
+        function parseReportDate(value) {
+            const match = String(value || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+            if (!match) return null;
+            const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function getWeekStart(date) {
+            const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            start.setDate(start.getDate() - start.getDay());
+            return start;
+        }
+
+        function weekKey(date) {
+            const start = getWeekStart(date);
+            const year = start.getFullYear();
+            const month = String(start.getMonth() + 1).padStart(2, '0');
+            const day = String(start.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDate(date) {
+            return new Intl.DateTimeFormat('he-IL').format(date);
+        }
+
+        function formatWeek(key) {
+            const start = new Date(`${key}T00:00:00`);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 6);
+            return `${formatDate(start)}–${formatDate(end)}`;
+        }
+
+        function populateWeekDropdown() {
+            const weeks = [...new Set(allData.map(row => weekKey(row._date)))].sort().reverse();
+            const select = document.getElementById('week-select');
+            select.innerHTML = '';
+            weeks.forEach((key, index) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${index === 0 ? 'השבוע האחרון: ' : ''}${formatWeek(key)}`;
+                select.appendChild(option);
+            });
+            selectedWeek = weeks[0] || null;
         }
 
         // מילוי רשימת התלמידים (אוטומטי)
@@ -153,12 +237,14 @@
         }
 
         // הפונקציה המרכזית שמעדכנת את כל המסך
-        function updateDashboard(selectedStudent) {
+        function updateDashboard() {
+            const selectedStudent = document.getElementById('student-select').value;
+            const weekData = selectedWeek ? allData.filter(row => weekKey(row._date) === selectedWeek) : allData;
             
             // 1. סינון הנתונים לפי הבחירה
-            let filteredData = allData;
+            let filteredData = weekData;
             if (selectedStudent !== 'all') {
-                filteredData = allData.filter(d => d['שם תלמיד/ה'].trim() === selectedStudent);
+                filteredData = weekData.filter(d => d['שם תלמיד/ה'].trim() === selectedStudent);
             }
 
             // 2. חישוב סטטיסטיקות
@@ -187,6 +273,7 @@
             // 3. עדכון כרטיסי המידע
             document.getElementById('total-minutes').innerText = totalMinutes.toLocaleString();
             document.getElementById('total-workouts').innerText = totalWorkouts.toLocaleString();
+            document.getElementById('weekly-period-label').innerText = selectedWeek ? `נתונים לשבוע ${formatWeek(selectedWeek)}` : '';
             
             // עדכון הכרטיס השלישי: אם זה תלמיד בודד, נראה את ממוצע הדקות שלו, אם זו כיתה - מספר תלמידים
             if (selectedStudent === 'all') {
@@ -198,12 +285,68 @@
                  document.getElementById('active-students').parentElement.querySelector('h2').innerText = "ממוצע לאימון (דק')";
             }
 
+            updateWeeklyComparison(selectedStudent, totalMinutes);
+            renderWeeklyTable();
+
             // 4. עדכון גרפים
             renderBarChart(dailyData);
             renderPieChart(moodData);
 
             // 5. עדכון טבלה
             renderTable(filteredData);
+        }
+
+        function previousWeekKey(key) {
+            const date = new Date(`${key}T00:00:00`);
+            date.setDate(date.getDate() - 7);
+            return weekKey(date);
+        }
+
+        function updateWeeklyComparison(selectedStudent, currentMinutes) {
+            const previousKey = previousWeekKey(selectedWeek);
+            const previousData = allData.filter(row =>
+                weekKey(row._date) === previousKey &&
+                (selectedStudent === 'all' || row['שם תלמיד/ה'].trim() === selectedStudent)
+            );
+            const previousMinutes = previousData.reduce((sum, row) => sum + (parseInt(row['דקות']) || 0), 0);
+            const difference = currentMinutes - previousMinutes;
+            const element = document.getElementById('weekly-change');
+            element.innerText = `${difference > 0 ? '+' : ''}${difference.toLocaleString()}`;
+            element.className = `text-4xl font-bold ${difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-500'}`;
+        }
+
+        function renderWeeklyTable() {
+            const currentRows = allData.filter(row => weekKey(row._date) === selectedWeek);
+            const previousRows = allData.filter(row => weekKey(row._date) === previousWeekKey(selectedWeek));
+            const studentNames = [...new Set([
+                ...allData.map(row => row['שם תלמיד/ה'].trim()),
+                'מתן תורג׳מן'
+            ])].sort();
+            const summarize = rows => rows.reduce((map, row) => {
+                const name = row['שם תלמיד/ה'].trim();
+                if (!map[name]) map[name] = { minutes: 0, workouts: 0 };
+                map[name].minutes += parseInt(row['דקות']) || 0;
+                map[name].workouts += 1;
+                return map;
+            }, {});
+            const current = summarize(currentRows);
+            const previous = summarize(previousRows);
+            const tbody = document.getElementById('weekly-table-body');
+            tbody.innerHTML = '';
+            studentNames.forEach(name => {
+                const now = current[name] || { minutes: 0, workouts: 0 };
+                const before = previous[name] || { minutes: 0, workouts: 0 };
+                const difference = now.minutes - before.minutes;
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 border-b font-medium text-gray-800">${name}</td>
+                    <td class="py-3 px-4 border-b font-bold text-indigo-600">${now.minutes}</td>
+                    <td class="py-3 px-4 border-b text-gray-600">${now.workouts}</td>
+                    <td class="py-3 px-4 border-b font-semibold ${difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-500'}">${difference > 0 ? '+' : ''}${difference}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function renderBarChart(dailyData) {
